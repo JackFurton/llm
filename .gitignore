@@ -23,22 +23,6 @@ var/
 # Virtual Environment
 venv/
 ENV/
-env/
-
-# Jupyter Notebook
-.ipynb_checkpoints
-
-# Model checkpoints and data
-*.pt
-*.pth
-*.bin
-checkpoints/*
-!checkpoints/.gitkeep
-
-# Logs
-logs/
-*.log
-wandb/
 
 # IDE
 .idea/
@@ -46,6 +30,16 @@ wandb/
 *.swp
 *.swo
 
-# OS specific
-.DS_Store
-Thumbs.db
+# Project specific
+checkpoints/
+data/raw/*.txt
+data/processed/*.txt
+data/curated/*.txt
+data/collection_stats.json
+data/preprocessing_stats.json
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Logs
+*.log
