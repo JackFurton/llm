@@ -14,6 +14,9 @@ A simple but complete implementation of a transformer-based language model built
 # Preprocess the collected data
 ./llm.sh preprocess --normalize --clean-html --clean-whitespace
 
+# Curate the data using the web interface
+./llm.sh curate
+
 # Train a model
 ./llm.sh train --epochs 10
 
@@ -32,6 +35,7 @@ A simple but complete implementation of a transformer-based language model built
 - **Model Evaluation**: Perplexity, BLEU score, and diversity metrics
 - **Data Collection**: Gather training data from Wikipedia, Project Gutenberg, news sources, and Reddit
 - **Data Preprocessing**: Clean, normalize, filter, and augment text data
+- **Data Curation**: Web interface for reviewing and selecting high-quality training data
 - **Training Pipeline**: Complete with checkpointing, evaluation, and visualization
 - **Customizable**: Adjust model size, training parameters, and generation settings
 
@@ -80,6 +84,23 @@ Preprocess the collected data to improve quality:
 # Text augmentation
 ./llm.sh preprocess --normalize --augment --synonym-replace
 ```
+
+### Data Curation
+
+Launch the web interface for data curation:
+
+```bash
+# Start the web interface
+./llm.sh curate
+
+# Start on a specific host and port
+./llm.sh curate --host 0.0.0.0 --port 8080
+
+# Start in debug mode
+./llm.sh curate --debug
+```
+
+Then open your browser and navigate to http://127.0.0.1:5000 (or the host/port you specified).
 
 ### Training
 
@@ -150,6 +171,11 @@ llm-project/
 │   │   ├── filters.py        # Text filters
 │   │   ├── normalizers.py    # Text normalizers
 │   │   └── augmenters.py     # Text augmenters
+│   ├── web_interface/        # Web interface for data curation
+│   │   ├── app.py            # Flask application
+│   │   ├── run.py            # Script to run the web interface
+│   │   ├── templates/        # HTML templates
+│   │   └── static/           # Static files (CSS, JS)
 │   ├── training/             # Training utilities
 │   │   └── trainer.py        # Training loop implementation
 │   ├── evaluation/           # Evaluation utilities
@@ -159,7 +185,8 @@ llm-project/
 ├── tests/                    # Unit tests
 ├── data/                     # Data storage
 │   ├── raw/                  # Raw text files
-│   └── processed/            # Processed data
+│   ├── processed/            # Processed data
+│   └── curated/              # Curated data for training
 └── checkpoints/              # Model checkpoints (created during training)
 ```
 
@@ -194,6 +221,16 @@ The project includes several preprocessing capabilities:
 
 - **Synonym Replacer**: Replace words with synonyms
 - **Back Translator**: Translate text to another language and back
+
+## Data Curation Interface
+
+The web interface provides the following features:
+
+- **File Browsing**: Browse raw, processed, and curated data files
+- **File Viewing**: View the content of data files
+- **File Editing**: Edit the content of data files
+- **Curation**: Select high-quality processed files for training
+- **Statistics**: View statistics about your data collection and preprocessing
 
 ## Model Architecture
 
@@ -230,16 +267,18 @@ The model is a decoder-only transformer with the following components:
 
 1. **Collect diverse training data**: Use multiple sources with `./llm.sh collect`
 2. **Preprocess your data**: Clean and normalize with `./llm.sh preprocess`
-3. **Use BPE tokenization**: `--tokenizer bpe --vocab-size 5000`
-4. **Train a larger model**: `--d-model 256 --layers 6`
-5. **Use beam search for coherent text**: `--beam --beam-size 5`
-6. **Use high temperature for creative text**: `--temperature 1.2`
-7. **Use low temperature for focused text**: `--temperature 0.5`
+3. **Curate your data**: Select high-quality examples with `./llm.sh curate`
+4. **Use BPE tokenization**: `--tokenizer bpe --vocab-size 5000`
+5. **Train a larger model**: `--d-model 256 --layers 6`
+6. **Use beam search for coherent text**: `--beam --beam-size 5`
+7. **Use high temperature for creative text**: `--temperature 1.2`
+8. **Use low temperature for focused text**: `--temperature 0.5`
 
 ## Requirements
 
 - Python 3.8+
 - PyTorch 2.0+
+- Flask 2.3+
 - Other dependencies in `requirements.txt`
 
 ## License
