@@ -16,6 +16,7 @@ fi
 # Default values
 MODE="help"
 DATA_DIR="data/raw"
+PROCESSED_DIR="data/processed"
 TOKENIZER_TYPE="char"
 EPOCHS=10
 D_MODEL=64
@@ -37,6 +38,12 @@ COLLECT_QUERY=""
 COLLECT_LIMIT=5
 COLLECT_SUBREDDIT=""
 COLLECT_NEWS_FEED=""
+PREPROCESS_LANGUAGE="en"
+PREPROCESS_NORMALIZE=false
+PREPROCESS_CLEAN_HTML=false
+PREPROCESS_CLEAN_MARKDOWN=false
+PREPROCESS_CLEAN_WHITESPACE=false
+PREPROCESS_AUGMENT=false
 
 # Display help
 show_help() {
@@ -51,11 +58,13 @@ show_help() {
     echo "  generate            Generate text"
     echo "  evaluate            Evaluate model performance"
     echo "  collect             Collect training data"
+    echo "  preprocess          Preprocess training data"
     echo "  test                Run tests"
     echo "  help                Show this help message"
     echo ""
     echo "Training options:"
     echo "  --data-dir DIR        Directory with training data (default: data/raw)"
+    echo "  --processed-dir DIR   Directory with processed data (default: data/processed)"
     echo "  --tokenizer TYPE      Tokenizer type: 'char', 'word', or 'bpe' (default: char)"
     echo "  --vocab-size N        Vocabulary size for BPE tokenizer (default: 1000)"
     echo "  --epochs N            Number of training epochs (default: 10)"
@@ -84,9 +93,24 @@ show_help() {
     echo "  --subreddit NAME      Specific subreddit to collect from (for Reddit source)"
     echo "  --news-feed URL       Specific news feed URL to collect from (for News source)"
     echo ""
+    echo "Data preprocessing options:"
+    echo "  --language LANG       Language filter (default: en)"
+    echo "  --no-language-filter  Disable language filtering"
+    echo "  --no-content-filter   Disable content filtering"
+    echo "  --no-quality-filter   Disable quality filtering"
+    echo "  --no-duplicate-filter Disable duplicate filtering"
+    echo "  --normalize           Apply text normalization"
+    echo "  --clean-html          Clean HTML tags and entities"
+    echo "  --clean-markdown      Clean Markdown formatting"
+    echo "  --clean-whitespace    Clean and normalize whitespace"
+    echo "  --augment             Apply text augmentation"
+    echo "  --synonym-replace     Replace words with synonyms"
+    echo "  --back-translate      Apply back-translation augmentation"
+    echo ""
     echo "Examples:"
     echo "  ./llm.sh setup                       # Set up the environment"
     echo "  ./llm.sh collect --sources wikipedia --query 'machine learning' --limit 10"
+    echo "  ./llm.sh preprocess --normalize --clean-html --clean-whitespace"
     echo "  ./llm.sh train --tokenizer bpe --vocab-size 5000 --epochs 20"
     echo "  ./llm.sh generate --prompt 'Once upon a time' --temperature 0.5"
     echo "  ./llm.sh evaluate --model checkpoints/best_model.pt"
@@ -110,8 +134,11 @@ setup() {
     echo "To collect training data:"
     echo "./llm.sh collect --sources wikipedia --query 'artificial intelligence'"
     echo ""
-    echo "To train a model with the collected data:"
-    echo "./llm.sh train"
+    echo "To preprocess the collected data:"
+    echo "./llm.sh preprocess --normalize --clean-html --clean-whitespace"
+    echo ""
+    echo "To train a model with the processed data:"
+    echo "./llm.sh train --processed-dir data/processed"
     echo ""
     echo "To explore the model in a notebook:"
     echo "jupyter notebook notebooks/model_exploration.ipynb"
@@ -140,6 +167,10 @@ if [ $# -gt 0 ]; then
             MODE="collect"
             shift
             ;;
+        preprocess)
+            MODE="preprocess"
+            shift
+            ;;
         test)
             MODE="test"
             shift
@@ -166,6 +197,11 @@ while [[ $# -gt 0 ]]; do
             ;;
         --data-dir)
             DATA_DIR="$2"
+            shift
+            shift
+            ;;
+        --processed-dir)
+            PROCESSED_DIR="$2"
             shift
             shift
             ;;
@@ -273,6 +309,55 @@ while [[ $# -gt 0 ]]; do
             shift
             shift
             ;;
+        --language)
+            PREPROCESS_LANGUAGE="$2"
+            shift
+            shift
+            ;;
+        --no-language-filter)
+            PREPROCESS_NO_LANGUAGE_FILTER="--no-language-filter"
+            shift
+            ;;
+        --no-content-filter)
+            PREPROCESS_NO_CONTENT_FILTER="--no-content-filter"
+            shift
+            ;;
+        --no-quality-filter)
+            PREPROCESS_NO_QUALITY_FILTER="--no-quality-filter"
+            shift
+            ;;
+        --no-duplicate-filter)
+            PREPROCESS_NO_DUPLICATE_FILTER="--no-duplicate-filter"
+            shift
+            ;;
+        --normalize)
+            PREPROCESS_NORMALIZE="--normalize"
+            shift
+            ;;
+        --clean-html)
+            PREPROCESS_CLEAN_HTML="--clean-html"
+            shift
+            ;;
+        --clean-markdown)
+            PREPROCESS_CLEAN_MARKDOWN="--clean-markdown"
+            shift
+            ;;
+        --clean-whitespace)
+            PREPROCESS_CLEAN_WHITESPACE="--clean-whitespace"
+            shift
+            ;;
+        --augment)
+            PREPROCESS_AUGMENT="--augment"
+            shift
+            ;;
+        --synonym-replace)
+            PREPROCESS_SYNONYM_REPLACE="--synonym-replace"
+            shift
+            ;;
+        --back-translate)
+            PREPROCESS_BACK_TRANSLATE="--back-translate"
+            shift
+            ;;
         *)
             echo "Unknown option: $1"
             show_help
@@ -289,6 +374,7 @@ case "$MODE" in
     train)
         echo "Training model with:"
         echo "  Data directory: $DATA_DIR"
+        echo "  Processed directory: $PROCESSED_DIR"
         echo "  Tokenizer type: $TOKENIZER_TYPE"
         echo "  Epochs: $EPOCHS"
         echo "  Model dimension: $D_MODEL"
@@ -297,9 +383,16 @@ case "$MODE" in
         echo "  Batch size: $BATCH_SIZE"
         echo ""
         
+        # Use processed data if available
+        TRAIN_DATA_DIR="$DATA_DIR"
+        if [ -d "$PROCESSED_DIR" ] && [ "$(ls -A $PROCESSED_DIR)" ]; then
+            echo "Using processed data from $PROCESSED_DIR"
+            TRAIN_DATA_DIR="$PROCESSED_DIR"
+        fi
+        
         python3 src/main.py \
             --mode train \
-            --data_dir "$DATA_DIR" \
+            --data_dir "$TRAIN_DATA_DIR" \
             --tokenizer_type "$TOKENIZER_TYPE" \
             --vocab_size "$VOCAB_SIZE" \
             --epochs "$EPOCHS" \
@@ -417,6 +510,80 @@ case "$MODE" in
         
         # Execute the command
         eval $COLLECT_CMD
+        ;;
+    preprocess)
+        echo "Preprocessing training data:"
+        echo "  Input directory: $DATA_DIR"
+        echo "  Output directory: $PROCESSED_DIR"
+        echo "  Language: $PREPROCESS_LANGUAGE"
+        
+        if [ -n "$PREPROCESS_NORMALIZE" ]; then
+            echo "  Applying text normalization"
+        fi
+        if [ -n "$PREPROCESS_CLEAN_HTML" ]; then
+            echo "  Cleaning HTML"
+        fi
+        if [ -n "$PREPROCESS_CLEAN_MARKDOWN" ]; then
+            echo "  Cleaning Markdown"
+        fi
+        if [ -n "$PREPROCESS_CLEAN_WHITESPACE" ]; then
+            echo "  Cleaning whitespace"
+        fi
+        if [ -n "$PREPROCESS_AUGMENT" ]; then
+            echo "  Applying text augmentation"
+        fi
+        if [ -n "$PREPROCESS_SYNONYM_REPLACE" ]; then
+            echo "  Replacing words with synonyms"
+        fi
+        if [ -n "$PREPROCESS_BACK_TRANSLATE" ]; then
+            echo "  Applying back-translation"
+        fi
+        echo ""
+        
+        # Build command with options
+        PREPROCESS_CMD="python3 src/data_preprocessing/preprocess.py --input-dir $DATA_DIR --output-dir $PROCESSED_DIR --language $PREPROCESS_LANGUAGE"
+        
+        # Add filter options
+        if [ -n "$PREPROCESS_NO_LANGUAGE_FILTER" ]; then
+            PREPROCESS_CMD="$PREPROCESS_CMD $PREPROCESS_NO_LANGUAGE_FILTER"
+        fi
+        if [ -n "$PREPROCESS_NO_CONTENT_FILTER" ]; then
+            PREPROCESS_CMD="$PREPROCESS_CMD $PREPROCESS_NO_CONTENT_FILTER"
+        fi
+        if [ -n "$PREPROCESS_NO_QUALITY_FILTER" ]; then
+            PREPROCESS_CMD="$PREPROCESS_CMD $PREPROCESS_NO_QUALITY_FILTER"
+        fi
+        if [ -n "$PREPROCESS_NO_DUPLICATE_FILTER" ]; then
+            PREPROCESS_CMD="$PREPROCESS_CMD $PREPROCESS_NO_DUPLICATE_FILTER"
+        fi
+        
+        # Add normalizer options
+        if [ -n "$PREPROCESS_NORMALIZE" ]; then
+            PREPROCESS_CMD="$PREPROCESS_CMD $PREPROCESS_NORMALIZE"
+        fi
+        if [ -n "$PREPROCESS_CLEAN_HTML" ]; then
+            PREPROCESS_CMD="$PREPROCESS_CMD $PREPROCESS_CLEAN_HTML"
+        fi
+        if [ -n "$PREPROCESS_CLEAN_MARKDOWN" ]; then
+            PREPROCESS_CMD="$PREPROCESS_CMD $PREPROCESS_CLEAN_MARKDOWN"
+        fi
+        if [ -n "$PREPROCESS_CLEAN_WHITESPACE" ]; then
+            PREPROCESS_CMD="$PREPROCESS_CMD $PREPROCESS_CLEAN_WHITESPACE"
+        fi
+        
+        # Add augmenter options
+        if [ -n "$PREPROCESS_AUGMENT" ]; then
+            PREPROCESS_CMD="$PREPROCESS_CMD $PREPROCESS_AUGMENT"
+        fi
+        if [ -n "$PREPROCESS_SYNONYM_REPLACE" ]; then
+            PREPROCESS_CMD="$PREPROCESS_CMD $PREPROCESS_SYNONYM_REPLACE"
+        fi
+        if [ -n "$PREPROCESS_BACK_TRANSLATE" ]; then
+            PREPROCESS_CMD="$PREPROCESS_CMD $PREPROCESS_BACK_TRANSLATE"
+        fi
+        
+        # Execute the command
+        eval $PREPROCESS_CMD
         ;;
     test)
         echo "Running tests..."
