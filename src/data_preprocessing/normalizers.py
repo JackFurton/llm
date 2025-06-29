@@ -27,33 +27,37 @@ class TextNormalizer(TextProcessor):
         Returns:
             Normalized text
         """
-        # Normalize unicode characters
-        text = unicodedata.normalize('NFKC', text)
-        
-        # Replace multiple spaces with a single space
-        text = re.sub(r'\s+', ' ', text)
-        
-        # Fix common punctuation issues
-        text = re.sub(r'\s+([.,;:!?])', r'\1', text)  # Remove space before punctuation
-        text = re.sub(r'([.,;:!?])([^\s])', r'\1 \2', text)  # Add space after punctuation
-        
-        # Fix quotes
-        text = re.sub(r'[""]', '"', text)  # Normalize quotes
-        text = re.sub(r'['']', "'", text)  # Normalize apostrophes
-        
-        # Fix dashes
-        text = re.sub(r'[-‐‑‒–—―]', '-', text)  # Normalize dashes
-        
-        # Fix ellipses
-        text = re.sub(r'\.{2,}', '...', text)  # Normalize ellipses
-        
-        # Remove control characters
-        text = ''.join(ch for ch in text if unicodedata.category(ch)[0] != 'C' or ch in '\n\t\r')
-        
-        # Strip leading/trailing whitespace
-        text = text.strip()
-        
-        return text
+        try:
+            # Normalize unicode characters
+            text = unicodedata.normalize('NFKC', text)
+            
+            # Replace multiple spaces with a single space
+            text = re.sub(r'\s+', ' ', text)
+            
+            # Fix common punctuation issues
+            text = re.sub(r'\s+([.,;:!?])', r'\1', text)  # Remove space before punctuation
+            text = re.sub(r'([.,;:!?])([^\s])', r'\1 \2', text)  # Add space after punctuation
+            
+            # Fix quotes
+            text = text.replace('"', '"').replace('"', '"')  # Normalize quotes
+            text = text.replace(''', "'").replace(''', "'")  # Normalize apostrophes
+            
+            # Fix dashes
+            text = text.replace('‐', '-').replace('‑', '-').replace('‒', '-').replace('–', '-').replace('—', '-').replace('―', '-')  # Normalize dashes
+            
+            # Fix ellipses
+            text = re.sub(r'\.{2,}', '...', text)  # Normalize ellipses
+            
+            # Remove control characters
+            text = ''.join(ch for ch in text if unicodedata.category(ch)[0] != 'C' or ch in '\n\t\r')
+            
+            # Strip leading/trailing whitespace
+            text = text.strip()
+            
+            return text
+        except Exception as e:
+            logger.error(f"Error in text normalization: {e}")
+            return text
 
 
 class HTMLCleaner(TextProcessor):

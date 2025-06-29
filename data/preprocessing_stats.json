@@ -1,8 +1,8 @@
 {
   "total_files_processed": 3,
-  "total_files_output": 0,
+  "total_files_output": 2,
   "total_chars_input": 114749,
-  "total_chars_output": 0,
+  "total_chars_output": 60277,
   "files_filtered": 1,
   "processors": {
     "language_filter": {
@@ -31,7 +31,7 @@
     },
     "whitespace_cleaner": {
       "type": "normalizer",
-      "chars_removed": 0
+      "chars_removed": 1
     }
   }
 }
