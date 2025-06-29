@@ -109,16 +109,20 @@ class LanguageFilter(TextProcessor):
         if len(text) < 100:
             return True
         
-        # Detect language
-        lang = self._detect_func(text)
-        
-        # Check if language is allowed
-        is_allowed = lang in self.allowed_languages
-        
-        if not is_allowed:
-            logger.info(f"Filtered text in language: {lang}")
-        
-        return is_allowed
+        try:
+            # Detect language
+            lang = self._detect_func(text)
+            
+            # Check if language is allowed
+            is_allowed = lang in self.allowed_languages
+            
+            if not is_allowed:
+                logger.info(f"Filtered text in language: {lang}")
+            
+            return is_allowed
+        except Exception as e:
+            logger.error(f"Error in language detection: {e}")
+            return True  # Allow text if detection fails
     
     def should_process(self, text: str) -> bool:
         """Only process texts with sufficient length"""
@@ -294,6 +298,8 @@ class DuplicateFilter(TextProcessor):
     
     def _compute_shingles(self, text: str, k: int = 5) -> Set[str]:
         """Compute k-shingles (character n-grams) from text"""
+        if len(text) < k:
+            return set()
         return {text[i:i+k] for i in range(len(text) - k + 1)}
     
     def _compute_minhash(self, shingles: Set[str], num_hashes: int = 100) -> List[int]:

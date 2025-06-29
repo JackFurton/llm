@@ -558,28 +558,28 @@ case "$MODE" in
         fi
         
         # Add normalizer options
-        if [ -n "$PREPROCESS_NORMALIZE" ]; then
-            PREPROCESS_CMD="$PREPROCESS_CMD $PREPROCESS_NORMALIZE"
+        if [ "$PREPROCESS_NORMALIZE" = "--normalize" ]; then
+            PREPROCESS_CMD="$PREPROCESS_CMD --normalize"
         fi
-        if [ -n "$PREPROCESS_CLEAN_HTML" ]; then
-            PREPROCESS_CMD="$PREPROCESS_CMD $PREPROCESS_CLEAN_HTML"
+        if [ "$PREPROCESS_CLEAN_HTML" = "--clean-html" ]; then
+            PREPROCESS_CMD="$PREPROCESS_CMD --clean-html"
         fi
-        if [ -n "$PREPROCESS_CLEAN_MARKDOWN" ]; then
-            PREPROCESS_CMD="$PREPROCESS_CMD $PREPROCESS_CLEAN_MARKDOWN"
+        if [ "$PREPROCESS_CLEAN_MARKDOWN" = "--clean-markdown" ]; then
+            PREPROCESS_CMD="$PREPROCESS_CMD --clean-markdown"
         fi
-        if [ -n "$PREPROCESS_CLEAN_WHITESPACE" ]; then
-            PREPROCESS_CMD="$PREPROCESS_CMD $PREPROCESS_CLEAN_WHITESPACE"
+        if [ "$PREPROCESS_CLEAN_WHITESPACE" = "--clean-whitespace" ]; then
+            PREPROCESS_CMD="$PREPROCESS_CMD --clean-whitespace"
         fi
         
         # Add augmenter options
-        if [ -n "$PREPROCESS_AUGMENT" ]; then
-            PREPROCESS_CMD="$PREPROCESS_CMD $PREPROCESS_AUGMENT"
+        if [ "$PREPROCESS_AUGMENT" = "--augment" ]; then
+            PREPROCESS_CMD="$PREPROCESS_CMD --augment"
         fi
-        if [ -n "$PREPROCESS_SYNONYM_REPLACE" ]; then
-            PREPROCESS_CMD="$PREPROCESS_CMD $PREPROCESS_SYNONYM_REPLACE"
+        if [ "$PREPROCESS_SYNONYM_REPLACE" = "--synonym-replace" ]; then
+            PREPROCESS_CMD="$PREPROCESS_CMD --synonym-replace"
         fi
-        if [ -n "$PREPROCESS_BACK_TRANSLATE" ]; then
-            PREPROCESS_CMD="$PREPROCESS_CMD $PREPROCESS_BACK_TRANSLATE"
+        if [ "$PREPROCESS_BACK_TRANSLATE" = "--back-translate" ]; then
+            PREPROCESS_CMD="$PREPROCESS_CMD --back-translate"
         fi
         
         # Execute the command

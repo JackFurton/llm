@@ -108,7 +108,7 @@ class TextPreprocessor:
         """
         try:
             # Read input file
-            with open(input_path, 'r', encoding='utf-8') as f:
+            with open(input_path, 'r', encoding='utf-8', errors='replace') as f:
                 text = f.read()
             
             # Update stats
@@ -117,35 +117,44 @@ class TextPreprocessor:
             
             # Apply filters
             for filter_proc in self.filters:
-                if filter_proc.should_process(text) and not filter_proc.process(text):
-                    logger.info(f"File {input_path} filtered by {filter_proc.name}")
-                    self.stats["files_filtered"] += 1
-                    self.stats["processors"][filter_proc.name]["files_filtered"] += 1
-                    return None
+                try:
+                    if filter_proc.should_process(text) and not filter_proc.process(text):
+                        logger.info(f"File {input_path} filtered by {filter_proc.name}")
+                        self.stats["files_filtered"] += 1
+                        self.stats["processors"][filter_proc.name]["files_filtered"] += 1
+                        return None
+                except Exception as e:
+                    logger.error(f"Error in filter {filter_proc.name}: {e}")
             
             # Apply normalizers
             for normalizer in self.normalizers:
-                if normalizer.should_process(text):
-                    old_len = len(text)
-                    text = normalizer.process(text)
-                    chars_removed = old_len - len(text)
-                    self.stats["processors"][normalizer.name]["chars_removed"] += chars_removed
-                    logger.debug(f"{normalizer.name} removed {chars_removed} characters")
+                try:
+                    if normalizer.should_process(text):
+                        old_len = len(text)
+                        text = normalizer.process(text)
+                        chars_removed = old_len - len(text)
+                        self.stats["processors"][normalizer.name]["chars_removed"] += chars_removed
+                        logger.debug(f"{normalizer.name} removed {chars_removed} characters")
+                except Exception as e:
+                    logger.error(f"Error in normalizer {normalizer.name}: {e}")
             
             # Apply augmenters
             augmented_texts = [text]  # Start with the original text
             for augmenter in self.augmenters:
-                if augmenter.should_process(text):
-                    new_texts = []
-                    for t in augmented_texts:
-                        augmented = augmenter.process(t)
-                        if isinstance(augmented, list):
-                            new_texts.extend(augmented)
-                        else:
-                            new_texts.append(augmented)
-                    
-                    augmented_texts = new_texts
-                    self.stats["processors"][augmenter.name]["files_augmented"] += 1
+                try:
+                    if augmenter.should_process(text):
+                        new_texts = []
+                        for t in augmented_texts:
+                            augmented = augmenter.process(t)
+                            if isinstance(augmented, list):
+                                new_texts.extend(augmented)
+                            else:
+                                new_texts.append(augmented)
+                        
+                        augmented_texts = new_texts
+                        self.stats["processors"][augmenter.name]["files_augmented"] += 1
+                except Exception as e:
+                    logger.error(f"Error in augmenter {augmenter.name}: {e}")
             
             # Save each augmented text
             saved_paths = []

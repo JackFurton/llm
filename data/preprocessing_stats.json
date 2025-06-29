@@ -1,0 +1,37 @@
+{
+  "total_files_processed": 3,
+  "total_files_output": 0,
+  "total_chars_input": 114749,
+  "total_chars_output": 0,
+  "files_filtered": 1,
+  "processors": {
+    "language_filter": {
+      "type": "filter",
+      "files_filtered": 0
+    },
+    "content_filter": {
+      "type": "filter",
+      "files_filtered": 0
+    },
+    "quality_filter": {
+      "type": "filter",
+      "files_filtered": 0
+    },
+    "duplicate_filter": {
+      "type": "filter",
+      "files_filtered": 1
+    },
+    "text_normalizer": {
+      "type": "normalizer",
+      "chars_removed": 0
+    },
+    "html_cleaner": {
+      "type": "normalizer",
+      "chars_removed": 0
+    },
+    "whitespace_cleaner": {
+      "type": "normalizer",
+      "chars_removed": 0
+    }
+  }
+}
