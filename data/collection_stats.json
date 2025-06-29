@@ -1,10 +1,10 @@
 {
-  "total_files": 2,
-  "total_chars": 113131,
+  "total_files": 1,
+  "total_chars": 50284,
   "sources": {
     "wikipedia": {
-      "files": 2,
-      "chars": 113131
+      "files": 1,
+      "chars": 50284
     }
   }
 }
