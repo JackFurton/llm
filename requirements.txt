@@ -16,4 +16,3 @@ langdetect>=1.0.9  # for language detection
 googletrans>=4.0.0-rc1  # for translation (optional)
 translators>=5.7.0  # alternative translation library (optional)
 flask>=2.3.0  # for web interface
-chart.js>=4.3.0  # for web interface charts
