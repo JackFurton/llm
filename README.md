@@ -283,10 +283,40 @@ The project includes several performance optimizations:
 - **Batched Operations**: Processing data in batches for better GPU utilization
 - **Memory Efficiency**: Careful management of memory usage during training and inference
 
+### Using the Cython Tokenizer
+
+To use the Cython-optimized tokenizer in your code:
+
+```python
+from src.cython_ext import FastCharacterTokenizer
+
+# Create and train the tokenizer
+tokenizer = FastCharacterTokenizer()
+tokenizer.train(["Sample text for training"])
+
+# Encode and decode text
+encoded = tokenizer.encode("Hello, world!")
+decoded = tokenizer.decode(encoded)
+```
+
+### Running Benchmarks
+
 To run the Cython performance benchmark:
 
 ```bash
 python benchmark_tokenizers.py
+```
+
+To test the Cython extension:
+
+```bash
+python build_cython.py
+```
+
+For a simple example of using the Cython tokenizer:
+
+```bash
+python use_cython_tokenizer.py
 ```
 
 ## Requirements
