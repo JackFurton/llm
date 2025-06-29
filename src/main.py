@@ -4,22 +4,27 @@ import torch
 import torch.optim as optim
 from torch.utils.data import DataLoader
 import glob
+import json
 
 from model.transformer import CustomLanguageModel
 from data.tokenizer import SimpleTokenizer, CharacterTokenizer
+from data.bpe_tokenizer import BPETokenizer
 from data.dataset import load_and_preprocess_text, create_dataloaders
 from training.trainer import Trainer
+from evaluation.metrics import calculate_perplexity, calculate_accuracy, evaluate_model
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Train or use a custom language model")
-    parser.add_argument("--mode", type=str, choices=["train", "generate"], default="train",
-                        help="Whether to train the model or generate text")
+    parser.add_argument("--mode", type=str, choices=["train", "generate", "evaluate"], default="train",
+                        help="Whether to train the model, generate text, or evaluate")
     
     # Data arguments
     parser.add_argument("--data_dir", type=str, default="data/raw",
                         help="Directory containing training data")
-    parser.add_argument("--tokenizer_type", type=str, choices=["char", "word"], default="char",
+    parser.add_argument("--tokenizer_type", type=str, choices=["char", "word", "bpe"], default="char",
                         help="Type of tokenizer to use")
+    parser.add_argument("--vocab_size", type=int, default=1000,
+                        help="Vocabulary size for tokenizers that support it")
     parser.add_argument("--block_size", type=int, default=128,
                         help="Context size for the model")
     
@@ -58,6 +63,16 @@ def parse_args():
                         help="Maximum length of generated text")
     parser.add_argument("--temperature", type=float, default=0.8,
                         help="Sampling temperature for generation")
+    parser.add_argument("--use_beam", action="store_true",
+                        help="Use beam search for generation")
+    parser.add_argument("--beam_size", type=int, default=5,
+                        help="Beam size for beam search")
+    
+    # Evaluation arguments
+    parser.add_argument("--eval_data", type=str, default=None,
+                        help="Path to evaluation data file")
+    parser.add_argument("--eval_samples", type=int, default=5,
+                        help="Number of samples to use for evaluation")
     
     return parser.parse_args()
 
@@ -76,6 +91,8 @@ def train(args):
     # Create tokenizer
     if args.tokenizer_type == "char":
         tokenizer = CharacterTokenizer()
+    elif args.tokenizer_type == "bpe":
+        tokenizer = BPETokenizer(vocab_size=args.vocab_size if hasattr(args, 'vocab_size') else 1000)
     else:
         tokenizer = SimpleTokenizer()
     
@@ -186,21 +203,136 @@ def generate(args):
     
     # Generate text
     print(f"Generating text with prompt: '{args.prompt}'")
-    generated_ids = model.generate(
-        prompt_ids, 
-        max_length=args.max_length, 
-        temperature=args.temperature
-    )
+    
+    if args.use_beam:
+        print(f"Using beam search with beam size: {args.beam_size}")
+        generated_ids = model.generate_beam(
+            prompt_ids, 
+            max_length=args.max_length,
+            beam_size=args.beam_size
+        )
+    else:
+        print(f"Using sampling with temperature: {args.temperature}")
+        generated_ids = model.generate(
+            prompt_ids, 
+            max_length=args.max_length, 
+            temperature=args.temperature
+        )
     
     # Decode and print
     generated_text = tokenizer.decode(generated_ids[0].tolist())
     print(f"\nGenerated text:\n{generated_text}")
+
+def evaluate(args):
+    # Load tokenizer
+    if args.tokenizer_path is None:
+        raise ValueError("Must provide --tokenizer_path for evaluation")
+    
+    if "char" in args.tokenizer_path:
+        tokenizer = CharacterTokenizer.load(args.tokenizer_path)
+    elif "bpe" in args.tokenizer_path:
+        tokenizer = BPETokenizer.load(args.tokenizer_path)
+    else:
+        tokenizer = SimpleTokenizer.load(args.tokenizer_path)
+    
+    # Load model
+    if args.model_path is None:
+        raise ValueError("Must provide --model_path for evaluation")
+    
+    # Determine device
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    
+    # Create model
+    vocab_size = len(tokenizer.token_to_id)
+    model = CustomLanguageModel(
+        vocab_size=vocab_size,
+        d_model=args.d_model,
+        num_heads=args.num_heads,
+        num_layers=args.num_layers,
+        d_ff=args.d_ff,
+        max_seq_length=args.block_size,
+        dropout=args.dropout
+    )
+    
+    # Load model weights
+    checkpoint = torch.load(args.model_path, map_location=device)
+    if "model_state_dict" in checkpoint:
+        model.load_state_dict(checkpoint["model_state_dict"])
+    else:
+        model.load_state_dict(checkpoint)
+    
+    model.to(device)
+    model.eval()
+    
+    # Load evaluation data
+    if args.eval_data:
+        with open(args.eval_data, 'r', encoding='utf-8') as f:
+            eval_text = f.read()
+    else:
+        # Use sample data if no evaluation data is provided
+        data_files = glob.glob(os.path.join("data/raw", "*.txt"))
+        if not data_files:
+            raise ValueError("No evaluation data provided and no text files found in data/raw")
+        
+        with open(data_files[0], 'r', encoding='utf-8') as f:
+            eval_text = f.read()
+    
+    # Split into paragraphs or sentences for evaluation
+    import re
+    eval_samples = re.split(r'\n\n|\.\s+', eval_text)
+    eval_samples = [s.strip() for s in eval_samples if len(s.strip()) > 50]
+    
+    # Limit number of samples
+    if args.eval_samples > 0 and args.eval_samples < len(eval_samples):
+        eval_samples = eval_samples[:args.eval_samples]
+    
+    print(f"Evaluating model on {len(eval_samples)} text samples...")
+    
+    # Run evaluation
+    metrics = evaluate_model(
+        model=model,
+        tokenizer=tokenizer,
+        test_texts=eval_samples,
+        device=device,
+        max_length=args.max_length,
+        temperature=args.temperature
+    )
+    
+    # Calculate perplexity if possible
+    try:
+        # Create a small dataset for perplexity calculation
+        from data.dataset import TextDataset
+        tokenized_texts = [tokenizer.encode(text) for text in eval_samples]
+        dataset = TextDataset(tokenized_texts, block_size=args.block_size)
+        dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=False)
+        
+        perplexity = calculate_perplexity(model, dataloader, device)
+        metrics["perplexity"] = perplexity
+    except Exception as e:
+        print(f"Could not calculate perplexity: {e}")
+    
+    # Print results
+    print("\nEvaluation Results:")
+    print("-" * 40)
+    for metric, value in metrics.items():
+        print(f"{metric}: {value:.4f}")
+    
+    # Save results to file
+    results_path = os.path.join(os.path.dirname(args.model_path), "evaluation_results.json")
+    with open(results_path, 'w') as f:
+        json.dump(metrics, f, indent=2)
+    
+    print(f"\nResults saved to {results_path}")
+    
+    return metrics
 
 def main():
     args = parse_args()
     
     if args.mode == "train":
         train(args)
+    elif args.mode == "evaluate":
+        evaluate(args)
     else:
         generate(args)
 

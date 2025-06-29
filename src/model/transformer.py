@@ -141,25 +141,26 @@ class CustomLanguageModel(nn.Module):
     
     def generate(self, input_ids, max_length, temperature=1.0):
         """Generate text using the model with optional temperature sampling"""
-        self.eval()
-        with torch.no_grad():
-            for _ in range(max_length - input_ids.size(1)):
-                # Create attention mask (causal/autoregressive)
-                seq_len = input_ids.size(1)
-                mask = torch.triu(torch.ones(seq_len, seq_len), diagonal=1).bool()
-                mask = mask.to(input_ids.device)
-                
-                # Forward pass
-                logits = self(input_ids, mask=mask)
-                
-                # Get next token probabilities (use only the last position)
-                next_token_logits = logits[:, -1, :] / temperature
-                next_token_probs = F.softmax(next_token_logits, dim=-1)
-                
-                # Sample from the distribution
-                next_token = torch.multinomial(next_token_probs, num_samples=1)
-                
-                # Append to input_ids
-                input_ids = torch.cat([input_ids, next_token], dim=1)
-                
-        return input_ids
+        from .generation import generate_with_sampling
+        
+        return generate_with_sampling(
+            model=self,
+            input_ids=input_ids,
+            max_length=max_length,
+            temperature=temperature,
+            top_k=50,
+            top_p=0.9,
+            repetition_penalty=1.2
+        )
+    
+    def generate_beam(self, input_ids, max_length, beam_size=5):
+        """Generate text using beam search"""
+        from .generation import generate_with_beam_search
+        
+        return generate_with_beam_search(
+            model=self,
+            input_ids=input_ids,
+            max_length=max_length,
+            beam_size=beam_size,
+            eos_token_id=3  # Assuming <eos> token id is 3
+        )

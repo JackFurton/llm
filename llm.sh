@@ -27,6 +27,11 @@ TOKENIZER_PATH="checkpoints/char_tokenizer.json"
 PROMPT="Hello"
 MAX_LENGTH=100
 TEMPERATURE=0.8
+USE_BEAM=false
+BEAM_SIZE=5
+VOCAB_SIZE=1000
+EVAL_DATA=""
+EVAL_SAMPLES=5
 
 # Display help
 show_help() {
@@ -57,6 +62,12 @@ show_help() {
     echo "  --prompt TEXT         Text prompt for generation (default: 'Hello')"
     echo "  --max-length N        Maximum length to generate (default: 100)"
     echo "  --temperature N       Sampling temperature (default: 0.8)"
+    echo "  --beam                Use beam search instead of sampling"
+    echo "  --beam-size N         Beam size for beam search (default: 5)"
+    echo ""
+    echo "Evaluation options:"
+    echo "  --eval-data PATH      Path to evaluation data file"
+    echo "  --eval-samples N      Number of samples to use for evaluation (default: 5)"
     echo ""
     echo "Examples:"
     echo "  ./llm.sh setup                       # Set up the environment"
@@ -185,6 +196,30 @@ while [[ $# -gt 0 ]]; do
             shift
             shift
             ;;
+        --beam)
+            USE_BEAM=true
+            shift
+            ;;
+        --beam-size)
+            BEAM_SIZE="$2"
+            shift
+            shift
+            ;;
+        --vocab-size)
+            VOCAB_SIZE="$2"
+            shift
+            shift
+            ;;
+        --eval-data)
+            EVAL_DATA="$2"
+            shift
+            shift
+            ;;
+        --eval-samples)
+            EVAL_SAMPLES="$2"
+            shift
+            shift
+            ;;
         *)
             echo "Unknown option: $1"
             show_help
@@ -213,6 +248,7 @@ case "$MODE" in
             --mode train \
             --data_dir "$DATA_DIR" \
             --tokenizer_type "$TOKENIZER_TYPE" \
+            --vocab_size "$VOCAB_SIZE" \
             --epochs "$EPOCHS" \
             --d_model "$D_MODEL" \
             --num_layers "$NUM_LAYERS" \
@@ -226,6 +262,11 @@ case "$MODE" in
         echo "  Prompt: '$PROMPT'"
         echo "  Max length: $MAX_LENGTH"
         echo "  Temperature: $TEMPERATURE"
+        if [ "$USE_BEAM" = true ]; then
+            echo "  Using beam search with beam size: $BEAM_SIZE"
+        else
+            echo "  Using sampling"
+        fi
         echo ""
         
         # Check if model and tokenizer exist
@@ -241,6 +282,12 @@ case "$MODE" in
             exit 1
         fi
         
+        # Add beam search option if enabled
+        BEAM_OPTION=""
+        if [ "$USE_BEAM" = true ]; then
+            BEAM_OPTION="--use_beam --beam_size $BEAM_SIZE"
+        fi
+        
         python3 src/main.py \
             --mode generate \
             --model_path "$MODEL_PATH" \
@@ -250,11 +297,41 @@ case "$MODE" in
             --temperature "$TEMPERATURE" \
             --d_model "$D_MODEL" \
             --num_layers "$NUM_LAYERS" \
-            --num_heads "$NUM_HEADS"
+            --num_heads "$NUM_HEADS" \
+            $BEAM_OPTION
         ;;
     test)
         echo "Running tests..."
         python3 -m unittest discover tests
+        ;;
+    evaluate)
+        echo "Evaluating model with:"
+        echo "  Model: $MODEL_PATH"
+        echo "  Tokenizer: $TOKENIZER_PATH"
+        echo "  Samples: $EVAL_SAMPLES"
+        if [ -n "$EVAL_DATA" ]; then
+            echo "  Evaluation data: $EVAL_DATA"
+        else
+            echo "  Using default data"
+        fi
+        echo ""
+        
+        EVAL_DATA_OPTION=""
+        if [ -n "$EVAL_DATA" ]; then
+            EVAL_DATA_OPTION="--eval_data $EVAL_DATA"
+        fi
+        
+        python3 src/main.py \
+            --mode evaluate \
+            --model_path "$MODEL_PATH" \
+            --tokenizer_path "$TOKENIZER_PATH" \
+            --eval_samples "$EVAL_SAMPLES" \
+            --d_model "$D_MODEL" \
+            --num_layers "$NUM_LAYERS" \
+            --num_heads "$NUM_HEADS" \
+            --max_length "$MAX_LENGTH" \
+            --temperature "$TEMPERATURE" \
+            $EVAL_DATA_OPTION
         ;;
     help|*)
         show_help
