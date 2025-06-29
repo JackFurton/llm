@@ -1,28 +1,53 @@
 #!/usr/bin/env python3
 """
 Build and test the Cython extensions
+
+IMPORTANT: This script requires a virtual environment with Cython installed.
+Run the following commands before executing this script:
+    python -m venv venv
+    source venv/bin/activate
+    pip install -r requirements.txt
 """
 import os
 import sys
 import time
-from Cython.Build import cythonize
-from setuptools import Extension
-import pyximport
+
+# Check if running in a virtual environment
+if not hasattr(sys, 'base_prefix') or sys.base_prefix == sys.prefix:
+    print("WARNING: This script should be run in a virtual environment.")
+    print("Please create and activate a virtual environment first:")
+    print("    python -m venv venv")
+    print("    source venv/bin/activate")
+    print("    pip install -r requirements.txt")
+    print("Then run this script again.")
+    sys.exit(1)
+
+try:
+    from Cython.Build import cythonize
+    from setuptools import Extension
+    import pyximport
+except ImportError:
+    print("ERROR: Cython is not installed. Please install it with:")
+    print("    pip install cython")
+    sys.exit(1)
 
 # Initialize Cython
 pyximport.install()
 
 # Build the extension
-extensions = [
-    Extension(
-        "src.cython_ext.fast_tokenizer",
-        ["src/cython_ext/fast_tokenizer.pyx"],
-    ),
-]
+try:
+    extensions = [
+        Extension(
+            "src.cython_ext.fast_tokenizer",
+            ["src/cython_ext/fast_tokenizer.pyx"],
+        ),
+    ]
 
-cythonize(extensions, language_level=3)
-
-print("Cython extension built successfully!")
+    cythonize(extensions, language_level=3)
+    print("Cython extension built successfully!")
+except Exception as e:
+    print(f"ERROR: Failed to build Cython extension: {e}")
+    sys.exit(1)
 
 # Test the extension
 try:

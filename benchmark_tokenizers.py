@@ -1,20 +1,45 @@
 #!/usr/bin/env python3
 """
 Benchmark the performance of Python vs Cython tokenizers
+
+IMPORTANT: This script requires a virtual environment with Cython installed.
+Run the following commands before executing this script:
+    python -m venv venv
+    source venv/bin/activate
+    pip install -r requirements.txt
 """
 import os
 import sys
 import time
 import random
 import string
-import pyximport
 
-# Initialize Cython
-pyximport.install()
+# Check if running in a virtual environment
+if not hasattr(sys, 'base_prefix') or sys.base_prefix == sys.prefix:
+    print("WARNING: This script should be run in a virtual environment.")
+    print("Please create and activate a virtual environment first:")
+    print("    python -m venv venv")
+    print("    source venv/bin/activate")
+    print("    pip install -r requirements.txt")
+    print("Then run this script again.")
+    sys.exit(1)
+
+try:
+    import pyximport
+    pyximport.install()
+except ImportError:
+    print("ERROR: Cython is not installed. Please install it with:")
+    print("    pip install cython")
+    sys.exit(1)
 
 # Import tokenizers
-from src.data.tokenizer import CharacterTokenizer
-from src.cython_ext.fast_tokenizer import FastCharacterTokenizer
+try:
+    from src.data.tokenizer import CharacterTokenizer
+    from src.cython_ext.fast_tokenizer import FastCharacterTokenizer
+except ImportError as e:
+    print(f"ERROR: Could not import tokenizers: {e}")
+    print("Make sure you're running this script from the project root directory.")
+    sys.exit(1)
 
 def generate_random_text(length):
     """Generate random text of specified length"""
@@ -50,7 +75,7 @@ def benchmark_tokenizer(tokenizer_class, texts, num_iterations=100):
 def main():
     # Generate test data
     print("Generating test data...")
-    num_texts = 1000
+    num_texts = 100
     text_length = 1000
     texts = [generate_random_text(text_length) for _ in range(num_texts)]
     
