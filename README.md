@@ -13,14 +13,18 @@ A simple but complete implementation of a transformer-based language model built
 
 # Generate text
 ./llm.sh generate --prompt "Once upon a time"
+
+# Evaluate model performance
+./llm.sh evaluate
 ```
 
 ## Features
 
 - **Transformer Architecture**: Multi-head attention, positional encoding, and feed-forward networks
-- **Tokenization**: Character-level and word-level tokenization options
+- **Multiple Tokenizers**: Character-level, word-level, and BPE tokenization options
+- **Advanced Text Generation**: Temperature sampling, top-k, top-p, and beam search
+- **Model Evaluation**: Perplexity, BLEU score, and diversity metrics
 - **Training Pipeline**: Complete with checkpointing, evaluation, and visualization
-- **Text Generation**: Temperature-controlled sampling for creative text generation
 - **Customizable**: Adjust model size, training parameters, and generation settings
 
 ## Usage
@@ -40,9 +44,9 @@ Train a small model quickly:
 ./llm.sh train --epochs 5
 ```
 
-Train a larger model for better results:
+Train with BPE tokenizer for better results:
 ```bash
-./llm.sh train --d-model 128 --layers 4 --epochs 20
+./llm.sh train --tokenizer bpe --vocab-size 5000 --d-model 128 --layers 4 --epochs 20
 ```
 
 ### Generation
@@ -52,9 +56,26 @@ Generate text with default settings:
 ./llm.sh generate --prompt "Hello world"
 ```
 
-Adjust generation parameters:
+Generate with beam search for more coherent text:
 ```bash
-./llm.sh generate --prompt "The future of AI" --temperature 0.5 --max-length 200
+./llm.sh generate --prompt "The future of AI" --beam --beam-size 5
+```
+
+Generate with sampling for more creative text:
+```bash
+./llm.sh generate --prompt "The future of AI" --temperature 1.2
+```
+
+### Evaluation
+
+Evaluate model performance:
+```bash
+./llm.sh evaluate
+```
+
+Evaluate on specific data:
+```bash
+./llm.sh evaluate --eval-data path/to/data.txt --eval-samples 10
 ```
 
 ### Testing
@@ -71,15 +92,18 @@ llm-project/
 ├── llm.sh                    # Main command-line tool
 ├── src/                      # Source code
 │   ├── model/                # Model architecture
-│   │   └── transformer.py    # Transformer implementation
+│   │   ├── transformer.py    # Transformer implementation
+│   │   └── generation.py     # Advanced text generation methods
 │   ├── data/                 # Data processing
-│   │   ├── tokenizer.py      # Tokenization utilities
+│   │   ├── tokenizer.py      # Basic tokenization utilities
+│   │   ├── bpe_tokenizer.py  # BPE tokenization
 │   │   └── dataset.py        # Dataset classes
 │   ├── training/             # Training utilities
 │   │   └── trainer.py        # Training loop implementation
+│   ├── evaluation/           # Evaluation utilities
+│   │   └── metrics.py        # Evaluation metrics
 │   └── main.py               # Main script for training/generation
 ├── notebooks/                # Jupyter notebooks
-│   └── model_exploration.ipynb  # Example notebook
 ├── tests/                    # Unit tests
 ├── data/                     # Data storage
 │   ├── raw/                  # Raw text files
@@ -97,21 +121,34 @@ The model is a decoder-only transformer with the following components:
 - Feed-forward networks
 - Layer normalization
 
-## Customization
+## Advanced Features
 
-You can customize various aspects of the model:
+### Tokenization Options
 
-- **Model size**: Adjust `--d-model`, `--layers`, and `--heads`
-- **Training**: Change `--epochs`, `--batch-size`
-- **Tokenization**: Choose between `--tokenizer char` or `--tokenizer word`
-- **Generation**: Control creativity with `--temperature` (lower = more focused, higher = more random)
+- **Character-level**: Simple but requires more parameters
+- **Word-level**: Better for small datasets
+- **BPE (Byte-Pair Encoding)**: Best balance of vocabulary size and token meaning
+
+### Text Generation Methods
+
+- **Temperature Sampling**: Control randomness with temperature parameter
+- **Top-K Sampling**: Only sample from the K most likely tokens
+- **Top-P (Nucleus) Sampling**: Sample from the smallest set of tokens whose cumulative probability exceeds P
+- **Beam Search**: Generate multiple candidate sequences and select the best one
+
+### Evaluation Metrics
+
+- **Perplexity**: Measures how well the model predicts the test data
+- **BLEU Score**: Compares generated text to reference text
+- **Diversity Metrics**: Measures the variety in generated text
 
 ## Tips for Better Results
 
-1. **Add more data**: Place text files in `data/raw/` directory
-2. **Train longer**: Increase epochs (e.g., `--epochs 50`)
-3. **Use a larger model**: Increase model size with `--d-model 256 --layers 6`
-4. **Adjust temperature**: Lower values (0.1-0.5) for focused text, higher values (0.7-1.0) for creative text
+1. **Use BPE tokenization**: `--tokenizer bpe --vocab-size 5000`
+2. **Train a larger model**: `--d-model 256 --layers 6`
+3. **Use beam search for coherent text**: `--beam --beam-size 5`
+4. **Use high temperature for creative text**: `--temperature 1.2`
+5. **Use low temperature for focused text**: `--temperature 0.5`
 
 ## Requirements
 
