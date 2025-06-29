@@ -1,0 +1,303 @@
+{% extends "base.html" %}
+
+{% block title %}Statistics - Custom LLM Data Curation{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body">
+                <h1 class="card-title">
+                    <i class="fas fa-chart-bar"></i> Data Statistics
+                </h1>
+                <p class="card-text">
+                    Statistics about your training data.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card stats-card h-100">
+            <div class="card-body text-center">
+                <h5 class="card-title">
+                    <i class="fas fa-file-alt"></i> Raw Data
+                </h5>
+                <p class="display-4">{{ raw_count }}</p>
+                <p class="card-text">
+                    {{ (raw_size / 1024 / 1024)|round(2) }} MB
+                </p>
+                <a href="{{ url_for('raw_files') }}" class="btn btn-primary">
+                    <i class="fas fa-eye"></i> View Files
+                </a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card stats-card h-100">
+            <div class="card-body text-center">
+                <h5 class="card-title">
+                    <i class="fas fa-file-code"></i> Processed Data
+                </h5>
+                <p class="display-4">{{ processed_count }}</p>
+                <p class="card-text">
+                    {{ (processed_size / 1024 / 1024)|round(2) }} MB
+                </p>
+                <a href="{{ url_for('processed_files') }}" class="btn btn-primary">
+                    <i class="fas fa-eye"></i> View Files
+                </a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card stats-card h-100">
+            <div class="card-body text-center">
+                <h5 class="card-title">
+                    <i class="fas fa-check-circle"></i> Curated Data
+                </h5>
+                <p class="display-4">{{ curated_count }}</p>
+                <p class="card-text">
+                    {{ (curated_size / 1024 / 1024)|round(2) }} MB
+                </p>
+                <a href="{{ url_for('curated_files') }}" class="btn btn-primary">
+                    <i class="fas fa-eye"></i> View Files
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if collection_stats %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-download"></i> Data Collection Statistics
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <h6 class="card-title">Overall</h6>
+                                <ul class="list-group list-group-flush">
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        Total Files
+                                        <span class="badge bg-primary rounded-pill">{{ collection_stats.total_files }}</span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        Total Characters
+                                        <span class="badge bg-primary rounded-pill">{{ collection_stats.total_chars }}</span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <h6 class="card-title">By Source</h6>
+                                <ul class="list-group list-group-flush">
+                                    {% for source, stats in collection_stats.sources.items() %}
+                                        {% if stats.files > 0 %}
+                                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                {{ source }}
+                                                <span>
+                                                    <span class="badge bg-primary rounded-pill">{{ stats.files }} files</span>
+                                                    <span class="badge bg-secondary rounded-pill">{{ stats.chars }} chars</span>
+                                                </span>
+                                            </li>
+                                        {% endif %}
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if preprocessing_stats %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-filter"></i> Data Preprocessing Statistics
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <h6 class="card-title">Overall</h6>
+                                <ul class="list-group list-group-flush">
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        Files Processed
+                                        <span class="badge bg-primary rounded-pill">{{ preprocessing_stats.total_files_processed }}</span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        Files Output
+                                        <span class="badge bg-primary rounded-pill">{{ preprocessing_stats.total_files_output }}</span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        Files Filtered
+                                        <span class="badge bg-warning rounded-pill">{{ preprocessing_stats.files_filtered }}</span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        Input Characters
+                                        <span class="badge bg-secondary rounded-pill">{{ preprocessing_stats.total_chars_input }}</span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        Output Characters
+                                        <span class="badge bg-secondary rounded-pill">{{ preprocessing_stats.total_chars_output }}</span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <h6 class="card-title">By Processor</h6>
+                                <ul class="list-group list-group-flush">
+                                    {% for processor, stats in preprocessing_stats.processors.items() %}
+                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                            {{ processor }}
+                                            <span>
+                                                {% if stats.type == "filter" %}
+                                                    <span class="badge bg-warning rounded-pill">{{ stats.files_filtered }} filtered</span>
+                                                {% elif stats.type == "normalizer" %}
+                                                    <span class="badge bg-info rounded-pill">{{ stats.chars_removed }} chars removed</span>
+                                                {% elif stats.type == "augmenter" %}
+                                                    <span class="badge bg-success rounded-pill">{{ stats.files_augmented }} augmented</span>
+                                                {% endif %}
+                                            </span>
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-pie"></i> Data Distribution
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <canvas id="fileCountChart"></canvas>
+                    </div>
+                    <div class="col-md-6">
+                        <canvas id="fileSizeChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // File count chart
+        const fileCountCtx = document.getElementById('fileCountChart').getContext('2d');
+        const fileCountChart = new Chart(fileCountCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Raw', 'Processed', 'Curated'],
+                datasets: [{
+                    label: 'Number of Files',
+                    data: [{{ raw_count }}, {{ processed_count }}, {{ curated_count }}],
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.5)',
+                        'rgba(54, 162, 235, 0.5)',
+                        'rgba(75, 192, 192, 0.5)'
+                    ],
+                    borderColor: [
+                        'rgba(255, 99, 132, 1)',
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(75, 192, 192, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'File Count by Category'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            precision: 0
+                        }
+                    }
+                }
+            }
+        });
+
+        // File size chart
+        const fileSizeCtx = document.getElementById('fileSizeChart').getContext('2d');
+        const fileSizeChart = new Chart(fileSizeCtx, {
+            type: 'pie',
+            data: {
+                labels: ['Raw', 'Processed', 'Curated'],
+                datasets: [{
+                    label: 'File Size (MB)',
+                    data: [
+                        {{ (raw_size / 1024 / 1024)|round(2) }},
+                        {{ (processed_size / 1024 / 1024)|round(2) }},
+                        {{ (curated_size / 1024 / 1024)|round(2) }}
+                    ],
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.5)',
+                        'rgba(54, 162, 235, 0.5)',
+                        'rgba(75, 192, 192, 0.5)'
+                    ],
+                    borderColor: [
+                        'rgba(255, 99, 132, 1)',
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(75, 192, 192, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'File Size Distribution (MB)'
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

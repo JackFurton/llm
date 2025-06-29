@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}View {{ filename }} - Custom LLM Data Curation{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    {% if section == "raw" %}
+                        <i class="fas fa-file-alt"></i>
+                    {% elif section == "processed" %}
+                        <i class="fas fa-file-code"></i>
+                    {% elif section == "curated" %}
+                        <i class="fas fa-check-circle"></i>
+                    {% endif %}
+                    {{ filename }}
+                </h5>
+                <div>
+                    <a href="{{ url_for(section + '_files') }}" class="btn btn-sm btn-outline-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to List
+                    </a>
+                    <a href="{{ url_for('edit_file', section=section, filename=filename) }}" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-edit"></i> Edit
+                    </a>
+                    {% if section == "processed" and not is_curated %}
+                        <form action="{{ url_for('curate_file', filename=filename) }}" method="post" class="d-inline">
+                            <button type="submit" class="btn btn-sm btn-outline-success">
+                                <i class="fas fa-check"></i> Curate
+                            </button>
+                        </form>
+                    {% elif section == "processed" and is_curated %}
+                        <button class="btn btn-sm btn-success" disabled>
+                            <i class="fas fa-check"></i> Curated
+                        </button>
+                    {% endif %}
+                    {% if section == "curated" %}
+                        <form action="{{ url_for('uncurate_file', filename=filename) }}" method="post" class="d-inline">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                <i class="fas fa-times"></i> Remove
+                            </button>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <small class="text-muted">
+                        Size: {{ (size / 1024)|round(1) }} KB | 
+                        Modified: {{ mtime.strftime('%Y-%m-%d %H:%M') }}
+                    </small>
+                </div>
+                <div class="file-content border rounded p-3 bg-light">
+                    {{ content }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

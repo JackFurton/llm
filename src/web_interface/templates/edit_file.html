@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}Edit {{ filename }} - Custom LLM Data Curation{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-edit"></i> Edit {{ filename }}
+                </h5>
+                <div>
+                    <a href="{{ url_for('view_file', section=section, filename=filename) }}" class="btn btn-sm btn-outline-secondary">
+                        <i class="fas fa-eye"></i> View
+                    </a>
+                    <a href="{{ url_for(section + '_files') }}" class="btn btn-sm btn-outline-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to List
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('edit_file', section=section, filename=filename) }}" method="post">
+                    <div class="mb-3">
+                        <textarea name="content" class="form-control file-editor" rows="20">{{ content }}</textarea>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('view_file', section=section, filename=filename) }}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Auto-resize textarea to fit content
+    document.addEventListener('DOMContentLoaded', function() {
+        const textarea = document.querySelector('.file-editor');
+        textarea.style.height = textarea.scrollHeight + 'px';
+    });
+</script>
+{% endblock %}

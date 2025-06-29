@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block title %}Custom LLM Data Curation{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body">
+                <h1 class="card-title">
+                    <i class="fas fa-brain"></i> Custom LLM Data Curation
+                </h1>
+                <p class="card-text">
+                    Welcome to the data curation interface for your custom language model.
+                    This tool helps you manage and curate your training data to improve model quality.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card stats-card h-100">
+            <div class="card-body text-center">
+                <h5 class="card-title">
+                    <i class="fas fa-file-alt"></i> Raw Data
+                </h5>
+                <p class="display-4">{{ raw_count }}</p>
+                <p class="card-text">Files collected from various sources</p>
+                <a href="{{ url_for('raw_files') }}" class="btn btn-primary">
+                    <i class="fas fa-eye"></i> View Files
+                </a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card stats-card h-100">
+            <div class="card-body text-center">
+                <h5 class="card-title">
+                    <i class="fas fa-file-code"></i> Processed Data
+                </h5>
+                <p class="display-4">{{ processed_count }}</p>
+                <p class="card-text">Files cleaned and normalized</p>
+                <a href="{{ url_for('processed_files') }}" class="btn btn-primary">
+                    <i class="fas fa-eye"></i> View Files
+                </a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card stats-card h-100">
+            <div class="card-body text-center">
+                <h5 class="card-title">
+                    <i class="fas fa-check-circle"></i> Curated Data
+                </h5>
+                <p class="display-4">{{ curated_count }}</p>
+                <p class="card-text">Files selected for training</p>
+                <a href="{{ url_for('curated_files') }}" class="btn btn-primary">
+                    <i class="fas fa-eye"></i> View Files
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-tasks"></i> Data Curation Workflow
+                </h5>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <h6 class="card-title">
+                                    <i class="fas fa-1"></i> Collect Data
+                                </h6>
+                                <p class="card-text">
+                                    Collect raw data from various sources using the data collection module.
+                                </p>
+                                <div class="d-grid">
+                                    <code>./llm.sh collect --sources wikipedia --query "machine learning"</code>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <h6 class="card-title">
+                                    <i class="fas fa-2"></i> Preprocess Data
+                                </h6>
+                                <p class="card-text">
+                                    Clean and normalize the collected data using the preprocessing module.
+                                </p>
+                                <div class="d-grid">
+                                    <code>./llm.sh preprocess --normalize --clean-html</code>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <h6 class="card-title">
+                                    <i class="fas fa-3"></i> Curate Data
+                                </h6>
+                                <p class="card-text">
+                                    Review and select high-quality data for training using this interface.
+                                </p>
+                                <div class="d-grid">
+                                    <a href="{{ url_for('processed_files') }}" class="btn btn-outline-primary">
+                                        <i class="fas fa-check-circle"></i> Start Curating
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12 text-center mt-3">
+                        <a href="{{ url_for('stats') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-chart-bar"></i> View Statistics
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

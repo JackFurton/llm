@@ -17,6 +17,7 @@ fi
 MODE="help"
 DATA_DIR="data/raw"
 PROCESSED_DIR="data/processed"
+CURATED_DIR="data/curated"
 TOKENIZER_TYPE="char"
 EPOCHS=10
 D_MODEL=64
@@ -44,6 +45,9 @@ PREPROCESS_CLEAN_HTML=false
 PREPROCESS_CLEAN_MARKDOWN=false
 PREPROCESS_CLEAN_WHITESPACE=false
 PREPROCESS_AUGMENT=false
+WEB_HOST="127.0.0.1"
+WEB_PORT=5000
+WEB_DEBUG=false
 
 # Display help
 show_help() {
@@ -59,12 +63,14 @@ show_help() {
     echo "  evaluate            Evaluate model performance"
     echo "  collect             Collect training data"
     echo "  preprocess          Preprocess training data"
+    echo "  curate              Launch web interface for data curation"
     echo "  test                Run tests"
     echo "  help                Show this help message"
     echo ""
     echo "Training options:"
     echo "  --data-dir DIR        Directory with training data (default: data/raw)"
     echo "  --processed-dir DIR   Directory with processed data (default: data/processed)"
+    echo "  --curated-dir DIR     Directory with curated data (default: data/curated)"
     echo "  --tokenizer TYPE      Tokenizer type: 'char', 'word', or 'bpe' (default: char)"
     echo "  --vocab-size N        Vocabulary size for BPE tokenizer (default: 1000)"
     echo "  --epochs N            Number of training epochs (default: 10)"
@@ -107,10 +113,16 @@ show_help() {
     echo "  --synonym-replace     Replace words with synonyms"
     echo "  --back-translate      Apply back-translation augmentation"
     echo ""
+    echo "Web interface options:"
+    echo "  --host HOST           Host to run the web server on (default: 127.0.0.1)"
+    echo "  --port PORT           Port to run the web server on (default: 5000)"
+    echo "  --debug               Run the web server in debug mode"
+    echo ""
     echo "Examples:"
     echo "  ./llm.sh setup                       # Set up the environment"
     echo "  ./llm.sh collect --sources wikipedia --query 'machine learning' --limit 10"
     echo "  ./llm.sh preprocess --normalize --clean-html --clean-whitespace"
+    echo "  ./llm.sh curate                      # Launch web interface for data curation"
     echo "  ./llm.sh train --tokenizer bpe --vocab-size 5000 --epochs 20"
     echo "  ./llm.sh generate --prompt 'Once upon a time' --temperature 0.5"
     echo "  ./llm.sh evaluate --model checkpoints/best_model.pt"
@@ -125,6 +137,7 @@ setup() {
     mkdir -p checkpoints
     mkdir -p data/raw
     mkdir -p data/processed
+    mkdir -p data/curated
     
     # Install dependencies
     pip install -r requirements.txt
@@ -137,8 +150,11 @@ setup() {
     echo "To preprocess the collected data:"
     echo "./llm.sh preprocess --normalize --clean-html --clean-whitespace"
     echo ""
-    echo "To train a model with the processed data:"
-    echo "./llm.sh train --processed-dir data/processed"
+    echo "To curate the processed data:"
+    echo "./llm.sh curate"
+    echo ""
+    echo "To train a model with the curated data:"
+    echo "./llm.sh train --curated-dir data/curated"
     echo ""
     echo "To explore the model in a notebook:"
     echo "jupyter notebook notebooks/model_exploration.ipynb"
@@ -169,6 +185,10 @@ if [ $# -gt 0 ]; then
             ;;
         preprocess)
             MODE="preprocess"
+            shift
+            ;;
+        curate)
+            MODE="curate"
             shift
             ;;
         test)
@@ -202,6 +222,11 @@ while [[ $# -gt 0 ]]; do
             ;;
         --processed-dir)
             PROCESSED_DIR="$2"
+            shift
+            shift
+            ;;
+        --curated-dir)
+            CURATED_DIR="$2"
             shift
             shift
             ;;
@@ -358,6 +383,20 @@ while [[ $# -gt 0 ]]; do
             PREPROCESS_BACK_TRANSLATE="--back-translate"
             shift
             ;;
+        --host)
+            WEB_HOST="$2"
+            shift
+            shift
+            ;;
+        --port)
+            WEB_PORT="$2"
+            shift
+            shift
+            ;;
+        --debug)
+            WEB_DEBUG=true
+            shift
+            ;;
         *)
             echo "Unknown option: $1"
             show_help
@@ -375,6 +414,7 @@ case "$MODE" in
         echo "Training model with:"
         echo "  Data directory: $DATA_DIR"
         echo "  Processed directory: $PROCESSED_DIR"
+        echo "  Curated directory: $CURATED_DIR"
         echo "  Tokenizer type: $TOKENIZER_TYPE"
         echo "  Epochs: $EPOCHS"
         echo "  Model dimension: $D_MODEL"
@@ -383,9 +423,12 @@ case "$MODE" in
         echo "  Batch size: $BATCH_SIZE"
         echo ""
         
-        # Use processed data if available
+        # Use curated data if available, otherwise use processed data if available, otherwise use raw data
         TRAIN_DATA_DIR="$DATA_DIR"
-        if [ -d "$PROCESSED_DIR" ] && [ "$(ls -A $PROCESSED_DIR)" ]; then
+        if [ -d "$CURATED_DIR" ] && [ "$(ls -A $CURATED_DIR)" ]; then
+            echo "Using curated data from $CURATED_DIR"
+            TRAIN_DATA_DIR="$CURATED_DIR"
+        elif [ -d "$PROCESSED_DIR" ] && [ "$(ls -A $PROCESSED_DIR)" ]; then
             echo "Using processed data from $PROCESSED_DIR"
             TRAIN_DATA_DIR="$PROCESSED_DIR"
         fi
@@ -517,25 +560,25 @@ case "$MODE" in
         echo "  Output directory: $PROCESSED_DIR"
         echo "  Language: $PREPROCESS_LANGUAGE"
         
-        if [ -n "$PREPROCESS_NORMALIZE" ]; then
+        if [ "$PREPROCESS_NORMALIZE" = "--normalize" ]; then
             echo "  Applying text normalization"
         fi
-        if [ -n "$PREPROCESS_CLEAN_HTML" ]; then
+        if [ "$PREPROCESS_CLEAN_HTML" = "--clean-html" ]; then
             echo "  Cleaning HTML"
         fi
-        if [ -n "$PREPROCESS_CLEAN_MARKDOWN" ]; then
+        if [ "$PREPROCESS_CLEAN_MARKDOWN" = "--clean-markdown" ]; then
             echo "  Cleaning Markdown"
         fi
-        if [ -n "$PREPROCESS_CLEAN_WHITESPACE" ]; then
+        if [ "$PREPROCESS_CLEAN_WHITESPACE" = "--clean-whitespace" ]; then
             echo "  Cleaning whitespace"
         fi
-        if [ -n "$PREPROCESS_AUGMENT" ]; then
+        if [ "$PREPROCESS_AUGMENT" = "--augment" ]; then
             echo "  Applying text augmentation"
         fi
-        if [ -n "$PREPROCESS_SYNONYM_REPLACE" ]; then
+        if [ "$PREPROCESS_SYNONYM_REPLACE" = "--synonym-replace" ]; then
             echo "  Replacing words with synonyms"
         fi
-        if [ -n "$PREPROCESS_BACK_TRANSLATE" ]; then
+        if [ "$PREPROCESS_BACK_TRANSLATE" = "--back-translate" ]; then
             echo "  Applying back-translation"
         fi
         echo ""
@@ -584,6 +627,31 @@ case "$MODE" in
         
         # Execute the command
         eval $PREPROCESS_CMD
+        ;;
+    curate)
+        echo "Launching data curation web interface:"
+        echo "  Host: $WEB_HOST"
+        echo "  Port: $WEB_PORT"
+        echo "  Raw data directory: $DATA_DIR"
+        echo "  Processed data directory: $PROCESSED_DIR"
+        echo "  Curated data directory: $CURATED_DIR"
+        if [ "$WEB_DEBUG" = true ]; then
+            echo "  Debug mode: enabled"
+        fi
+        echo ""
+        echo "Open your browser and navigate to http://$WEB_HOST:$WEB_PORT"
+        echo "Press Ctrl+C to stop the server"
+        echo ""
+        
+        # Build command with options
+        CURATE_CMD="python3 src/web_interface/run.py --host $WEB_HOST --port $WEB_PORT --raw-dir $DATA_DIR --processed-dir $PROCESSED_DIR --curated-dir $CURATED_DIR"
+        
+        if [ "$WEB_DEBUG" = true ]; then
+            CURATE_CMD="$CURATE_CMD --debug"
+        fi
+        
+        # Execute the command
+        eval $CURATE_CMD
         ;;
     test)
         echo "Running tests..."
