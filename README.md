@@ -8,8 +8,11 @@ A simple but complete implementation of a transformer-based language model built
 # Setup the environment
 ./llm.sh setup
 
-# Train a model (small and quick)
-./llm.sh train --epochs 5
+# Collect training data
+./llm.sh collect --sources wikipedia --query "artificial intelligence" --limit 5
+
+# Train a model
+./llm.sh train --epochs 10
 
 # Generate text
 ./llm.sh generate --prompt "Once upon a time"
@@ -24,6 +27,7 @@ A simple but complete implementation of a transformer-based language model built
 - **Multiple Tokenizers**: Character-level, word-level, and BPE tokenization options
 - **Advanced Text Generation**: Temperature sampling, top-k, top-p, and beam search
 - **Model Evaluation**: Perplexity, BLEU score, and diversity metrics
+- **Data Collection**: Gather training data from Wikipedia, Project Gutenberg, news sources, and Reddit
 - **Training Pipeline**: Complete with checkpointing, evaluation, and visualization
 - **Customizable**: Adjust model size, training parameters, and generation settings
 
@@ -35,6 +39,24 @@ The project includes a single command-line tool `llm.sh` that handles all functi
 
 ```bash
 ./llm.sh setup
+```
+
+### Data Collection
+
+Collect training data from various sources:
+
+```bash
+# Collect from Wikipedia
+./llm.sh collect --sources wikipedia --query "machine learning" --limit 10
+
+# Collect from Project Gutenberg
+./llm.sh collect --sources gutenberg --limit 5
+
+# Collect from Reddit
+./llm.sh collect --sources reddit --subreddit "science" --limit 5
+
+# Collect from multiple sources
+./llm.sh collect --sources wikipedia gutenberg news --query "artificial intelligence" --limit 3
 ```
 
 ### Training
@@ -98,6 +120,9 @@ llm-project/
 │   │   ├── tokenizer.py      # Basic tokenization utilities
 │   │   ├── bpe_tokenizer.py  # BPE tokenization
 │   │   └── dataset.py        # Dataset classes
+│   ├── data_collection/      # Data collection utilities
+│   │   ├── collector.py      # Base collector framework
+│   │   └── sources.py        # Data source implementations
 │   ├── training/             # Training utilities
 │   │   └── trainer.py        # Training loop implementation
 │   ├── evaluation/           # Evaluation utilities
@@ -110,6 +135,15 @@ llm-project/
 │   └── processed/            # Processed data
 └── checkpoints/              # Model checkpoints (created during training)
 ```
+
+## Data Collection Sources
+
+The project includes several data sources for collecting training data:
+
+- **Wikipedia**: Collects articles from Wikipedia based on search queries
+- **Project Gutenberg**: Collects public domain books from Project Gutenberg
+- **News**: Collects news articles from various RSS feeds
+- **Reddit**: Collects posts and comments from specified subreddits
 
 ## Model Architecture
 
@@ -144,11 +178,12 @@ The model is a decoder-only transformer with the following components:
 
 ## Tips for Better Results
 
-1. **Use BPE tokenization**: `--tokenizer bpe --vocab-size 5000`
-2. **Train a larger model**: `--d-model 256 --layers 6`
-3. **Use beam search for coherent text**: `--beam --beam-size 5`
-4. **Use high temperature for creative text**: `--temperature 1.2`
-5. **Use low temperature for focused text**: `--temperature 0.5`
+1. **Collect diverse training data**: Use multiple sources with `./llm.sh collect`
+2. **Use BPE tokenization**: `--tokenizer bpe --vocab-size 5000`
+3. **Train a larger model**: `--d-model 256 --layers 6`
+4. **Use beam search for coherent text**: `--beam --beam-size 5`
+5. **Use high temperature for creative text**: `--temperature 1.2`
+6. **Use low temperature for focused text**: `--temperature 0.5`
 
 ## Requirements
 
