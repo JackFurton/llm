@@ -32,6 +32,11 @@ BEAM_SIZE=5
 VOCAB_SIZE=1000
 EVAL_DATA=""
 EVAL_SAMPLES=5
+COLLECT_SOURCES="all"
+COLLECT_QUERY=""
+COLLECT_LIMIT=5
+COLLECT_SUBREDDIT=""
+COLLECT_NEWS_FEED=""
 
 # Display help
 show_help() {
@@ -44,12 +49,15 @@ show_help() {
     echo "  setup               Set up the environment"
     echo "  train               Train a new model"
     echo "  generate            Generate text"
+    echo "  evaluate            Evaluate model performance"
+    echo "  collect             Collect training data"
     echo "  test                Run tests"
     echo "  help                Show this help message"
     echo ""
     echo "Training options:"
     echo "  --data-dir DIR        Directory with training data (default: data/raw)"
-    echo "  --tokenizer TYPE      Tokenizer type: 'char' or 'word' (default: char)"
+    echo "  --tokenizer TYPE      Tokenizer type: 'char', 'word', or 'bpe' (default: char)"
+    echo "  --vocab-size N        Vocabulary size for BPE tokenizer (default: 1000)"
     echo "  --epochs N            Number of training epochs (default: 10)"
     echo "  --d-model N           Model dimension (default: 64)"
     echo "  --layers N            Number of transformer layers (default: 2)"
@@ -69,10 +77,19 @@ show_help() {
     echo "  --eval-data PATH      Path to evaluation data file"
     echo "  --eval-samples N      Number of samples to use for evaluation (default: 5)"
     echo ""
+    echo "Data collection options:"
+    echo "  --sources LIST        Data sources to collect from: 'wikipedia', 'gutenberg', 'news', 'reddit', 'all' (default: all)"
+    echo "  --query TEXT          Search query for data collection"
+    echo "  --limit N             Maximum number of items to collect per source (default: 5)"
+    echo "  --subreddit NAME      Specific subreddit to collect from (for Reddit source)"
+    echo "  --news-feed URL       Specific news feed URL to collect from (for News source)"
+    echo ""
     echo "Examples:"
     echo "  ./llm.sh setup                       # Set up the environment"
-    echo "  ./llm.sh train --epochs 20 --d-model 128"
+    echo "  ./llm.sh collect --sources wikipedia --query 'machine learning' --limit 10"
+    echo "  ./llm.sh train --tokenizer bpe --vocab-size 5000 --epochs 20"
     echo "  ./llm.sh generate --prompt 'Once upon a time' --temperature 0.5"
+    echo "  ./llm.sh evaluate --model checkpoints/best_model.pt"
     echo "  ./llm.sh test                        # Run tests"
 }
 
@@ -90,7 +107,10 @@ setup() {
     
     echo "Setup complete! You can now use the custom LLM."
     echo ""
-    echo "To train a model with the sample data:"
+    echo "To collect training data:"
+    echo "./llm.sh collect --sources wikipedia --query 'artificial intelligence'"
+    echo ""
+    echo "To train a model with the collected data:"
     echo "./llm.sh train"
     echo ""
     echo "To explore the model in a notebook:"
@@ -110,6 +130,14 @@ if [ $# -gt 0 ]; then
             ;;
         generate)
             MODE="generate"
+            shift
+            ;;
+        evaluate)
+            MODE="evaluate"
+            shift
+            ;;
+        collect)
+            MODE="collect"
             shift
             ;;
         test)
@@ -220,6 +248,31 @@ while [[ $# -gt 0 ]]; do
             shift
             shift
             ;;
+        --sources)
+            COLLECT_SOURCES="$2"
+            shift
+            shift
+            ;;
+        --query)
+            COLLECT_QUERY="$2"
+            shift
+            shift
+            ;;
+        --limit)
+            COLLECT_LIMIT="$2"
+            shift
+            shift
+            ;;
+        --subreddit)
+            COLLECT_SUBREDDIT="$2"
+            shift
+            shift
+            ;;
+        --news-feed)
+            COLLECT_NEWS_FEED="$2"
+            shift
+            shift
+            ;;
         *)
             echo "Unknown option: $1"
             show_help
@@ -300,10 +353,6 @@ case "$MODE" in
             --num_heads "$NUM_HEADS" \
             $BEAM_OPTION
         ;;
-    test)
-        echo "Running tests..."
-        python3 -m unittest discover tests
-        ;;
     evaluate)
         echo "Evaluating model with:"
         echo "  Model: $MODEL_PATH"
@@ -332,6 +381,46 @@ case "$MODE" in
             --max_length "$MAX_LENGTH" \
             --temperature "$TEMPERATURE" \
             $EVAL_DATA_OPTION
+        ;;
+    collect)
+        echo "Collecting training data:"
+        echo "  Sources: $COLLECT_SOURCES"
+        echo "  Query: '$COLLECT_QUERY'"
+        echo "  Limit per source: $COLLECT_LIMIT"
+        echo "  Output directory: $DATA_DIR"
+        if [ -n "$COLLECT_SUBREDDIT" ]; then
+            echo "  Subreddit: $COLLECT_SUBREDDIT"
+        fi
+        if [ -n "$COLLECT_NEWS_FEED" ]; then
+            echo "  News feed: $COLLECT_NEWS_FEED"
+        fi
+        echo ""
+        
+        # Build command with options
+        COLLECT_CMD="python3 src/data_collection/collect.py --output-dir $DATA_DIR --limit $COLLECT_LIMIT"
+        
+        if [ -n "$COLLECT_SOURCES" ] && [ "$COLLECT_SOURCES" != "all" ]; then
+            COLLECT_CMD="$COLLECT_CMD --sources $COLLECT_SOURCES"
+        fi
+        
+        if [ -n "$COLLECT_QUERY" ]; then
+            COLLECT_CMD="$COLLECT_CMD --query \"$COLLECT_QUERY\""
+        fi
+        
+        if [ -n "$COLLECT_SUBREDDIT" ]; then
+            COLLECT_CMD="$COLLECT_CMD --subreddit \"$COLLECT_SUBREDDIT\""
+        fi
+        
+        if [ -n "$COLLECT_NEWS_FEED" ]; then
+            COLLECT_CMD="$COLLECT_CMD --news-feed \"$COLLECT_NEWS_FEED\""
+        fi
+        
+        # Execute the command
+        eval $COLLECT_CMD
+        ;;
+    test)
+        echo "Running tests..."
+        python3 -m unittest discover tests
         ;;
     help|*)
         show_help
