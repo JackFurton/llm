@@ -11,6 +11,9 @@ A simple but complete implementation of a transformer-based language model built
 # Collect training data
 ./llm.sh collect --sources wikipedia --query "artificial intelligence" --limit 5
 
+# Preprocess the collected data
+./llm.sh preprocess --normalize --clean-html --clean-whitespace
+
 # Train a model
 ./llm.sh train --epochs 10
 
@@ -28,6 +31,7 @@ A simple but complete implementation of a transformer-based language model built
 - **Advanced Text Generation**: Temperature sampling, top-k, top-p, and beam search
 - **Model Evaluation**: Perplexity, BLEU score, and diversity metrics
 - **Data Collection**: Gather training data from Wikipedia, Project Gutenberg, news sources, and Reddit
+- **Data Preprocessing**: Clean, normalize, filter, and augment text data
 - **Training Pipeline**: Complete with checkpointing, evaluation, and visualization
 - **Customizable**: Adjust model size, training parameters, and generation settings
 
@@ -57,6 +61,24 @@ Collect training data from various sources:
 
 # Collect from multiple sources
 ./llm.sh collect --sources wikipedia gutenberg news --query "artificial intelligence" --limit 3
+```
+
+### Data Preprocessing
+
+Preprocess the collected data to improve quality:
+
+```bash
+# Basic preprocessing
+./llm.sh preprocess --normalize --clean-html --clean-whitespace
+
+# Language filtering
+./llm.sh preprocess --language en
+
+# Content filtering
+./llm.sh preprocess --normalize --no-content-filter
+
+# Text augmentation
+./llm.sh preprocess --normalize --augment --synonym-replace
 ```
 
 ### Training
@@ -123,6 +145,11 @@ llm-project/
 │   ├── data_collection/      # Data collection utilities
 │   │   ├── collector.py      # Base collector framework
 │   │   └── sources.py        # Data source implementations
+│   ├── data_preprocessing/   # Data preprocessing utilities
+│   │   ├── preprocessor.py   # Base preprocessor framework
+│   │   ├── filters.py        # Text filters
+│   │   ├── normalizers.py    # Text normalizers
+│   │   └── augmenters.py     # Text augmenters
 │   ├── training/             # Training utilities
 │   │   └── trainer.py        # Training loop implementation
 │   ├── evaluation/           # Evaluation utilities
@@ -144,6 +171,29 @@ The project includes several data sources for collecting training data:
 - **Project Gutenberg**: Collects public domain books from Project Gutenberg
 - **News**: Collects news articles from various RSS feeds
 - **Reddit**: Collects posts and comments from specified subreddits
+
+## Data Preprocessing Features
+
+The project includes several preprocessing capabilities:
+
+### Filters
+
+- **Language Filter**: Filter text based on detected language
+- **Content Filter**: Filter text containing profanity or sensitive topics
+- **Quality Filter**: Filter text based on quality metrics (length, word length, etc.)
+- **Duplicate Filter**: Filter duplicate or near-duplicate text
+
+### Normalizers
+
+- **Text Normalizer**: Apply basic text normalization (punctuation, whitespace, etc.)
+- **HTML Cleaner**: Clean HTML tags and entities
+- **Whitespace Cleaner**: Clean and normalize whitespace
+- **Markdown Cleaner**: Clean Markdown formatting
+
+### Augmenters
+
+- **Synonym Replacer**: Replace words with synonyms
+- **Back Translator**: Translate text to another language and back
 
 ## Model Architecture
 
@@ -179,11 +229,12 @@ The model is a decoder-only transformer with the following components:
 ## Tips for Better Results
 
 1. **Collect diverse training data**: Use multiple sources with `./llm.sh collect`
-2. **Use BPE tokenization**: `--tokenizer bpe --vocab-size 5000`
-3. **Train a larger model**: `--d-model 256 --layers 6`
-4. **Use beam search for coherent text**: `--beam --beam-size 5`
-5. **Use high temperature for creative text**: `--temperature 1.2`
-6. **Use low temperature for focused text**: `--temperature 0.5`
+2. **Preprocess your data**: Clean and normalize with `./llm.sh preprocess`
+3. **Use BPE tokenization**: `--tokenizer bpe --vocab-size 5000`
+4. **Train a larger model**: `--d-model 256 --layers 6`
+5. **Use beam search for coherent text**: `--beam --beam-size 5`
+6. **Use high temperature for creative text**: `--temperature 1.2`
+7. **Use low temperature for focused text**: `--temperature 0.5`
 
 ## Requirements
 
